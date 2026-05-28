@@ -39,7 +39,9 @@
               "station_1_area": "Station 1 Area (m²)",
               "station_2_area": "Station 2 Area (m²)",
               "station_3_area": "Station 3 Area (m²)",
-              "station_4_area": "Station 4 Area (m²)"
+              "station_4_area": "Station 4 Area (m²)",
+              "station_5_area": "Station 5 Area (m²)",
+              "station_6_area": "Station 6 Area (m²)"
             }
        }
     }

@@ -621,6 +621,52 @@ class SolemCoordinator(DataUpdateCoordinator):
         if not hasattr(self, 'last_reset'):
             self.last_reset = None
         
+        # =========================================================================
+        # Fetch real controller status from device
+        # =========================================================================
+        try:
+            status = await self.api.get_status()
+            self.controller.state = status.get("controller_state", "Unknown")
+
+            if status.get("is_watering") and status.get("station_num"):
+                active_station_num = status["station_num"]
+                if 1 <= active_station_num <= self.num_stations:
+                    self.stations[active_station_num - 1].state = "Sprinkling"
+                    for i, station in enumerate(self.stations):
+                        if i + 1 != active_station_num:
+                            station.state = "Stopped"
+                else:
+                    _LOGGER.warning(
+                        f"{self.controller_mac_address} - Watering on station "
+                        f"{active_station_num} outside configured range 1-{self.num_stations}"
+                    )
+            elif not status.get("is_watering"):
+                for station in self.stations:
+                    station.state = "Stopped"
+            else:
+                _LOGGER.warning(
+                    f"{self.controller_mac_address} - Watering active but no station "
+                    f"in status; keeping existing station states"
+                )
+
+            _LOGGER.debug(
+                f"{self.controller_mac_address} - Status: Controller={self.controller.state}, "
+                f"Watering={status.get('is_watering')}, Station={status.get('station_num')}, "
+                f"Remaining={status.get('remaining_seconds')}s"
+            )
+
+        except APIConnectionError as ex:
+            _LOGGER.warning(
+                f"{self.controller_mac_address} - Failed to get device status, "
+                f"keeping last known states: {ex}"
+            )
+        except Exception as ex:
+            _LOGGER.error(
+                f"{self.controller_mac_address} - Unexpected error getting status, "
+                f"keeping last known states: {ex}",
+                exc_info=True,
+            )
+        
         # Verifies if it's after 00:05:00
         now = dt_util.now()
         if now.time() > datetime.strptime("00:05:00", "%H:%M:%S").time():

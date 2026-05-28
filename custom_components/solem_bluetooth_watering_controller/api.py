@@ -6,6 +6,7 @@ of making this example code executable.
 import logging
 import sys
 import struct
+import asyncio
 from homeassistant.core import HomeAssistant, ServiceCall
 from tenacity import retry, stop_after_attempt, wait_exponential
 from bleak import BleakClient, BleakScanner
@@ -81,6 +82,108 @@ class SolemAPI:
             _LOGGER.debug(f"Failed connecting!, ex:{ex}")
             raise APIConnectionError("Timeout connecting to api")
 
+
+    # GATT Characteristic UUIDs
+    WRITE_CHAR_UUID = "108b0002-eab5-bc09-d0ea-0b8f467ce8ee"
+    NOTIFY_CHAR_UUID = "108b0003-eab5-bc09-d0ea-0b8f467ce8ee"
+    MAX_STATION_NUM = 6
+
+    COMMIT_COMMAND = bytes.fromhex("3b00")
+
+    async def get_status(self) -> dict:
+        """Poll controller status via BLE (commit triggers seq 0x02 notification).
+
+        Returns:
+            dict: {
+                "controller_state": "On" or "Off",
+                "is_watering": bool,
+                "station_num": int or None,
+                "remaining_seconds": int or None
+            }
+        """
+        if self.mock:
+            return {
+                "controller_state": "Unknown",
+                "is_watering": False,
+                "station_num": None,
+                "remaining_seconds": None
+            }
+
+        status_result: dict[str, Any] = {}
+        status_event = asyncio.Event()
+        subscribed = False
+
+        def notification_handler(sender, data):
+            if len(data) < 18 or data[2] != 0x02 or data[3] == 0x10:
+                return
+
+            status_byte = data[3]
+            is_on = bool(status_byte & 0x40)
+            is_watering = bool(status_byte & 0x02)
+            station_num = (
+                data[9] if 1 <= data[9] <= self.MAX_STATION_NUM else None
+            )
+
+            remaining_seconds = None
+            if is_watering:
+                time_14_16 = struct.unpack(">H", data[14:16])[0]
+                time_16_18 = struct.unpack(">H", data[16:18])[0]
+                best = max(time_14_16, time_16_18)
+                # 16 at [14:16] with zero [16:18] is padding, not remaining time
+                if best == 16 and time_16_18 == 0:
+                    remaining_seconds = None
+                elif best > 0:
+                    remaining_seconds = best
+
+            status_result.update({
+                "controller_state": "On" if is_on else "Off",
+                "is_watering": is_watering,
+                "station_num": station_num,
+                "remaining_seconds": remaining_seconds,
+            })
+            _LOGGER.debug(
+                f"{self.mac_address} - Status notification (seq=2): {status_result}"
+            )
+            status_event.set()
+
+        client = None
+        try:
+            client = BleakClient(self.mac_address, timeout=self.bluetooth_timeout)
+            await client.connect()
+            if not client.is_connected:
+                raise APIConnectionError("Failed to connect to device")
+
+            await client.start_notify(self.NOTIFY_CHAR_UUID, notification_handler)
+            subscribed = True
+
+            write_uuid = self.characteristic_uuid or self.WRITE_CHAR_UUID
+            await client.write_gatt_char(write_uuid, self.COMMIT_COMMAND)
+
+            try:
+                await asyncio.wait_for(status_event.wait(), timeout=5.0)
+            except asyncio.TimeoutError as ex:
+                raise APIConnectionError(
+                    "Timeout waiting for status notification"
+                ) from ex
+
+            return status_result
+
+        except APIConnectionError:
+            raise
+        except Exception as ex:
+            _LOGGER.error(f"{self.mac_address} - Error getting status: {ex}", exc_info=True)
+            raise APIConnectionError(f"Failed to get status: {ex}") from ex
+        finally:
+            if client and client.is_connected:
+                try:
+                    if subscribed:
+                        await client.stop_notify(self.NOTIFY_CHAR_UUID)
+                except Exception as ex:
+                    _LOGGER.debug(f"{self.mac_address} - stop_notify: {ex}")
+                try:
+                    await client.disconnect()
+                except Exception as ex:
+                    _LOGGER.debug(f"{self.mac_address} - disconnect: {ex}")
 
     async def sprinkle_station_x_for_y_minutes(self, station: int, minutes: int):
         """Sprinkle a specific station for a specified number of minutes """
