@@ -355,6 +355,10 @@ class SolemConfigFlow(ConfigFlow, domain=DOMAIN):
             ),
             errors=errors,
             last_step=False,
+        )
+    
+    
+    async def async_step_station_areas_reconfigure(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Reconfigure lawn area per station."""
