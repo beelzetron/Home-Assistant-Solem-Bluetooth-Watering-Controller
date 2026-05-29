@@ -14,7 +14,7 @@ Integrate the Solem **BL-IP** Bluetooth irrigation controller into Home Assistan
 
 ## Installation
 
-This integration depends on the **`solem-blip-ble`** Python package ([PyPI](https://pypi.org/project/solem-blip-ble/), [source](https://github.com/beelzetron/solem-blip-ble)). Home Assistant installs it from PyPI automatically when you set up the integration.
+This integration depends on the **`solem-blip-ble`** Python package ([PyPI](https://pypi.org/project/solem-blip-ble/), [source](https://github.com/beelzetron/solem-blip-ble)). Home Assistant installs it from PyPI automatically when you set up or update the integration (currently requires `solem-blip-ble>=0.1.8`).
 
 For local development against a checkout of the library (overrides the PyPI install):
 
