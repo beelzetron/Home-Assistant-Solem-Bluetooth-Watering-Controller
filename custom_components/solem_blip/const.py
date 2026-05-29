@@ -7,7 +7,7 @@ MIN_SCAN_INTERVAL = 10
 CONTROLLER_MAC_ADDRESS = "controller_mac_address"
 NUM_STATIONS = "num_stations"
 SPRINKLE_WITH_RAIN = "sprinkle_with_rain"
-OPEN_WEATHER_MAP_API_KEY = "open_weather_map_api_key"
+WEATHER_ENTITY = "weather_entity"
 SOIL_MOISTURE_SENSOR = "soil_moisture_sensor"
 SOIL_MOISTURE_THRESHOLD = "soil_moisture_threshold"
 DEFAULT_SOIL_MOISTURE = 40
@@ -21,9 +21,12 @@ BLUETOOTH_TIMEOUT = "bluetooth_timeout"
 BLUETOOTH_MIN_TIMEOUT = 5
 BLUETOOTH_DEFAULT_TIMEOUT = 30
 
-OPEN_WEATHER_MAP_FORECAST_URL = "https://api.openweathermap.org/data/2.5/forecast?units=metric&"
-OPEN_WEATHER_MAP_CURRENT_URL = "https://api.openweathermap.org/data/2.5/weather?"
+WEATHER_CACHE_TIMEOUT = "weather_cache_timeout"
+WEATHER_CACHE_MIN_TIMEOUT = 1
+WEATHER_CACHE_DEFAULT_TIMEOUT = 5
+WEATHER_RAIN_PROBABILITY_THRESHOLD = 50
+
+# Legacy option key from OpenWeatherMap-based releases.
 OPEN_WEATHER_MAP_API_CACHE_TIMEOUT = "openweathermap_api_cache_timeout"
-OPEN_WEATHER_MAP_API_CACHE_MIN_TIMEOUT = 1
-OPEN_WEATHER_MAP_API_CACHE_DEFAULT_TIMEOUT = 5
+
 SOLEM_API_MOCK = "solem_api_mock"

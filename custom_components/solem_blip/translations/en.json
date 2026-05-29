@@ -16,18 +16,20 @@
     "step": {
       "user": {
         "title": "Basic data",
+        "description": "Weather-based rain skip is optional. Select a Home Assistant weather entity to enable rain sensors and automatic rain delays.",
         "data": {
           "controller_mac_address": "Controller MAC Address",
-          "open_weather_map_api_key": "OpenWeatherMap API Key",
+          "weather_entity": "Weather entity (optional)",
           "num_stations": "Number of stations",
           "sensors": "Controller location",
           "sprinkle_with_rain": "Sprinkle even when raining"
         }
       },
       "reconfigure": {
+        "description": "Weather-based rain skip is optional. Select a Home Assistant weather entity to enable rain sensors and automatic rain delays.",
         "data": {
           "controller_mac_address": "Controller MAC Address",
-          "open_weather_map_api_key": "OpenWeatherMap API Key",
+          "weather_entity": "Weather entity (optional)",
           "num_stations": "Number of stations",
           "sensors": "Controller location",
           "sprinkle_with_rain": "Sprinkle even when raining"
@@ -53,7 +55,7 @@
         "data": {
           "scan_interval": "Scan Interval (seconds)",
           "bluetooth_timeout": "Bluetooth timeout (seconds)",
-          "openweathermap_api_cache_timeout": "OpenWeatherMap API Cache timeout (minutes)",
+          "weather_cache_timeout": "Weather cache timeout (minutes)",
           "solem_api_mock": "Mock Solem API for debug"
         },
         "description": "Amend your options.",

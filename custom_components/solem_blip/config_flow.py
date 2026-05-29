@@ -39,7 +39,7 @@ from .const import (
     MIN_SCAN_INTERVAL,
     CONTROLLER_MAC_ADDRESS,
     NUM_STATIONS,
-    OPEN_WEATHER_MAP_API_KEY,
+    WEATHER_ENTITY,
     SPRINKLE_WITH_RAIN,
     MAX_SPRINKLES_PER_DAY,
     SOIL_MOISTURE_SENSOR,
@@ -49,9 +49,10 @@ from .const import (
     BLUETOOTH_TIMEOUT,
     BLUETOOTH_MIN_TIMEOUT,
     BLUETOOTH_DEFAULT_TIMEOUT,
+    WEATHER_CACHE_TIMEOUT,
+    WEATHER_CACHE_MIN_TIMEOUT,
+    WEATHER_CACHE_DEFAULT_TIMEOUT,
     OPEN_WEATHER_MAP_API_CACHE_TIMEOUT,
-    OPEN_WEATHER_MAP_API_CACHE_MIN_TIMEOUT,
-    OPEN_WEATHER_MAP_API_CACHE_DEFAULT_TIMEOUT,
     SOLEM_API_MOCK
 )
 
@@ -87,7 +88,7 @@ async def validate_settings(hass: HomeAssistant, data: dict[str, Any]) -> bool:
 class SolemConfigFlow(ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Solem BL-IP."""
 
-    VERSION = 1
+    VERSION = 2
     _input_data: dict[str, Any]
     _title: str
 
@@ -100,6 +101,74 @@ class SolemConfigFlow(ConfigFlow, domain=DOMAIN):
     def async_get_options_flow(config_entry):
         """Get the options flow for this handler."""
         return SolemOptionsFlowHandler(config_entry)
+
+    @staticmethod
+    @callback
+    def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
+        """Migrate config entries from OpenWeatherMap API key to optional HA weather."""
+        if config_entry.version == 1:
+            data = dict(config_entry.data)
+            data.pop("open_weather_map_api_key", None)
+            data.setdefault(WEATHER_ENTITY, None)
+            hass.config_entries.async_update_entry(
+                config_entry,
+                data=data,
+                version=2,
+            )
+        return True
+
+    def _build_basic_schema(
+        self,
+        *,
+        controller_default: str | None = None,
+        num_stations_default: int = 1,
+        zone_default: str | None = None,
+        weather_default: str | None = None,
+        sprinkle_default: str = "false",
+        soil_sensor_default: str | None = None,
+        soil_threshold_default: float = DEFAULT_SOIL_MOISTURE,
+        bt_options: list[dict[str, str]],
+    ) -> vol.Schema:
+        """Shared schema for initial setup and reconfigure."""
+        return vol.Schema(
+            {
+                vol.Required(
+                    CONTROLLER_MAC_ADDRESS,
+                    default=controller_default,
+                ): selector(
+                    {
+                        "select": {
+                            "options": bt_options,
+                            "mode": "dropdown",
+                        }
+                    }
+                ),
+                vol.Required(NUM_STATIONS, default=num_stations_default): (
+                    vol.All(vol.Coerce(int), vol.Clamp(min=1))
+                ),
+                vol.Required(CONF_SENSORS, default=zone_default): selector(
+                    {"entity": {"domain": "zone"}}
+                ),
+                vol.Optional(WEATHER_ENTITY, default=weather_default): selector(
+                    {"entity": {"domain": "weather"}}
+                ),
+                vol.Optional(SPRINKLE_WITH_RAIN, default=sprinkle_default): selector(
+                    {
+                        "select": {
+                            "options": ["false", "true"],
+                            "mode": "dropdown",
+                            "translation_key": "true_false_selector",
+                        }
+                    }
+                ),
+                vol.Optional(SOIL_MOISTURE_SENSOR, default=soil_sensor_default): selector(
+                    {"entity": {"domain": "sensor", "device_class": "humidity"}}
+                ),
+                vol.Optional(
+                    SOIL_MOISTURE_THRESHOLD, default=soil_threshold_default
+                ): vol.All(vol.Coerce(float), vol.Range(min=0, max=100)),
+            }
+        )
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -165,36 +234,7 @@ class SolemConfigFlow(ConfigFlow, domain=DOMAIN):
             for device in bt_devices
             if f"{device.name or 'Unknown'} - {device.address}" not in existing_entries
         ]
-        schema = vol.Schema(
-            {
-                vol.Required(CONTROLLER_MAC_ADDRESS): selector(
-                    {
-                        "select": {
-                            "options": options,
-                            "mode": "dropdown",
-                        }
-                    }
-                ),
-                vol.Required(NUM_STATIONS, default=1): (vol.All(vol.Coerce(int), vol.Clamp(min=1))),
-                vol.Required(CONF_SENSORS): selector(
-                    {"entity": {"domain": "zone"}}
-                ),
-                vol.Required(OPEN_WEATHER_MAP_API_KEY): str,
-                vol.Required(SPRINKLE_WITH_RAIN): selector(
-                    {
-                        "select": {
-                            "options": ["false", "true"],
-                            "mode": "dropdown",
-                            "translation_key": "true_false_selector",
-                        }
-                    }
-                ),
-                vol.Optional(SOIL_MOISTURE_SENSOR): selector(
-                    {"entity": {"domain": "sensor", "device_class": "humidity"}}
-                ),
-                vol.Optional(SOIL_MOISTURE_THRESHOLD, default=DEFAULT_SOIL_MOISTURE): vol.All(vol.Coerce(float), vol.Range(min=0, max=100)),
-            }
-        )
+        schema = self._build_basic_schema(bt_options=options)
 
         # Show initial form.
         return self.async_show_form(
@@ -218,6 +258,10 @@ class SolemConfigFlow(ConfigFlow, domain=DOMAIN):
                     for i in range(1, self.num_stations + 1)
                 ]
                 self._input_data["station_areas"] = station_areas
+                if not self._input_data.get(WEATHER_ENTITY):
+                    self._input_data[WEATHER_ENTITY] = None
+                if SPRINKLE_WITH_RAIN not in self._input_data:
+                    self._input_data[SPRINKLE_WITH_RAIN] = "false"
     
                 return self.async_create_entry(
                     title=self._input_data[CONTROLLER_MAC_ADDRESS],
@@ -297,42 +341,20 @@ class SolemConfigFlow(ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="reconfigure",
-            data_schema=vol.Schema(
-                {
-                     vol.Required(CONTROLLER_MAC_ADDRESS, default=config_entry.data[CONTROLLER_MAC_ADDRESS]): selector(
-                        {
-                            "select": {
-                                "options": options,
-                                "mode": "dropdown",
-                            }
-                        }
-                    ),
-                    vol.Required(NUM_STATIONS, default=config_entry.data[NUM_STATIONS]): (vol.All(vol.Coerce(int), vol.Clamp(min=1))),
-                    vol.Required(CONF_SENSORS, default=config_entry.data[CONF_SENSORS]): selector(
-                        {"entity": {"domain": "zone"}}
-                    ),
-                    vol.Required(OPEN_WEATHER_MAP_API_KEY, default=config_entry.data[OPEN_WEATHER_MAP_API_KEY]): str,
-                    vol.Required(SPRINKLE_WITH_RAIN, default=config_entry.data[SPRINKLE_WITH_RAIN]): selector(
-                        {
-                            "select": {
-                                "options": ["false", "true"],
-                                "mode": "dropdown",
-                                "translation_key": "true_false_selector",
-                            }
-                        }
-                    ),
-                    vol.Optional(SOIL_MOISTURE_SENSOR, default=config_entry.data[SOIL_MOISTURE_SENSOR]): selector(
-                        {"entity": {"domain": "sensor", "device_class": "humidity"}}
-                    ),
-                    vol.Optional(SOIL_MOISTURE_THRESHOLD, default=config_entry.data.get(SOIL_MOISTURE_THRESHOLD, DEFAULT_SOIL_MOISTURE)): vol.All(vol.Coerce(float), vol.Range(min=0, max=100)),
-                }
+            data_schema=self._build_basic_schema(
+                controller_default=config_entry.data[CONTROLLER_MAC_ADDRESS],
+                num_stations_default=config_entry.data[NUM_STATIONS],
+                zone_default=config_entry.data[CONF_SENSORS],
+                weather_default=config_entry.data.get(WEATHER_ENTITY),
+                sprinkle_default=config_entry.data.get(SPRINKLE_WITH_RAIN, "false"),
+                soil_sensor_default=config_entry.data.get(SOIL_MOISTURE_SENSOR),
+                soil_threshold_default=config_entry.data.get(
+                    SOIL_MOISTURE_THRESHOLD, DEFAULT_SOIL_MOISTURE
+                ),
+                bt_options=options,
             ),
             errors=errors,
-            last_step=True,  # Adding last_step True/False decides whether form shows Next or Submit buttons
-        )
-    
-    
-    async def async_step_station_areas_reconfigure(
+            last_step=False,
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Reconfigure lawn area per station."""
@@ -347,6 +369,10 @@ class SolemConfigFlow(ConfigFlow, domain=DOMAIN):
                     for i in range(1, self.num_stations + 1)
                 ]
                 self._input_data["station_areas"] = station_areas
+                if not self._input_data.get(WEATHER_ENTITY):
+                    self._input_data[WEATHER_ENTITY] = None
+                if SPRINKLE_WITH_RAIN not in self._input_data:
+                    self._input_data[SPRINKLE_WITH_RAIN] = "false"
     
                 return self.async_update_reload_and_abort(
                     config_entry,
@@ -406,9 +432,15 @@ class SolemOptionsFlowHandler(OptionsFlow):
                     default=self.options.get(BLUETOOTH_TIMEOUT, BLUETOOTH_DEFAULT_TIMEOUT),
                 ): (vol.All(vol.Coerce(int), vol.Clamp(min=BLUETOOTH_MIN_TIMEOUT))),
                 vol.Required(
-                    OPEN_WEATHER_MAP_API_CACHE_TIMEOUT,
-                    default=self.options.get(OPEN_WEATHER_MAP_API_CACHE_TIMEOUT, OPEN_WEATHER_MAP_API_CACHE_DEFAULT_TIMEOUT),
-                ): (vol.All(vol.Coerce(int), vol.Clamp(min=OPEN_WEATHER_MAP_API_CACHE_MIN_TIMEOUT))),
+                    WEATHER_CACHE_TIMEOUT,
+                    default=self.options.get(
+                        WEATHER_CACHE_TIMEOUT,
+                        self.options.get(
+                            OPEN_WEATHER_MAP_API_CACHE_TIMEOUT,
+                            WEATHER_CACHE_DEFAULT_TIMEOUT,
+                        ),
+                    ),
+                ): (vol.All(vol.Coerce(int), vol.Clamp(min=WEATHER_CACHE_MIN_TIMEOUT))),
                 vol.Required(SOLEM_API_MOCK, default=self.options.get(SOLEM_API_MOCK, "false")): selector(
                     {
                         "select": {

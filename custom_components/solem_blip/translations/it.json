@@ -16,18 +16,20 @@
     "step": {
       "user": {
         "title": "Dati di base",
+        "description": "Il salto irrigazione per pioggia è opzionale. Seleziona un'entità meteo di Home Assistant per abilitare sensori pioggia e ritardi automatici.",
         "data": {
           "controller_mac_address": "Indirizzo MAC del controller",
-          "open_weather_map_api_key": "Chiave API OpenWeatherMap",
+          "weather_entity": "Entità meteo (opzionale)",
           "num_stations": "Numero di stazioni",
           "sensors": "Posizione del controller",
           "sprinkle_with_rain": "Irrigare anche con pioggia"
         }
       },
       "reconfigure": {
+        "description": "Il salto irrigazione per pioggia è opzionale. Seleziona un'entità meteo di Home Assistant per abilitare sensori pioggia e ritardi automatici.",
         "data": {
           "controller_mac_address": "Indirizzo MAC del controller",
-          "open_weather_map_api_key": "Chiave API OpenWeatherMap",
+          "weather_entity": "Entità meteo (opzionale)",
           "num_stations": "Numero di stazioni",
           "sensors": "Posizione del controller",
           "sprinkle_with_rain": "Irrigare anche con pioggia"
@@ -53,7 +55,7 @@
         "data": {
           "scan_interval": "Intervallo di scansione (secondi)",
           "bluetooth_timeout": "Timeout Bluetooth (secondi)",
-          "openweathermap_api_cache_timeout": "Timeout cache API OpenWeatherMap (minuti)",
+          "weather_cache_timeout": "Timeout cache meteo (minuti)",
           "solem_api_mock": "Simula API Solem (debug)"
         },
         "description": "Modifica le opzioni.",

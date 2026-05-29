@@ -52,8 +52,8 @@ For each BL-IP controller that you want to use, you should add a config entry. Y
 * which is the bluetooth device
 * the number of stations your controller have
 * the controller location (it loads the zones you have in HA)
-* the OpenWeatherMap API key (you will need to create an API key. first you need to create an [account](https://home.openweathermap.org/users/sign_up))
-* sprinkle even when raining (a true/false dropdown - true if you still want to sprinke even if it's raining, false otherwise)
+* an optional **Home Assistant weather entity** (for rain skip, rain sensors, and forecast-based irrigation adjustments — uses whatever weather integration you already have, e.g. Met.no, Open-Meteo, or OpenWeatherMap via HA)
+* sprinkle even when raining (only applies when a weather entity is configured)
 
 Afterwards an empty irrigation schedule is created. If you want to control it you will need the [Solem Schedule Card](https://github.com/hcraveiro/solem-schedule-card) installed. Previously I had it on the config flow but it is so not user friendly that I decided that a card would be better.
 
@@ -62,9 +62,9 @@ Afterwards an empty irrigation schedule is created. If you want to control it yo
 There is a number of sensors that are mande available for each controller/config entry:
 * Controller status - on or off and also has an attribute that stores the schedule in json
 * Station(n) status - stopped or sprinkling
-* Has rained today - true if it has, false otherwise
-* Is it raining now - true if it is raining, false otherwise
-* Will it rain today - true if it will rain from this moment, false otherwise
+* Has rained today - true if it has, false otherwise (requires weather entity)
+* Is it raining now - true if it is raining, false otherwise (requires weather entity)
+* Will it rain today - true if it will rain from this moment, false otherwise (requires weather entity)
 * Last rain - datetime of last time it rained
 * Last sprinkle - last time there was a sprinkle either manual or scheduled
 * Next schedule - next time that it is scheduled to sprinkle
