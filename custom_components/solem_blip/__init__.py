@@ -17,7 +17,7 @@ import logging
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers.device_registry import DeviceEntry
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
@@ -60,21 +60,26 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: MyConfigEntry) ->
     coordinator = SolemCoordinator(hass, config_entry)
     hass.data.setdefault(DOMAIN, {})[config_entry.entry_id] = coordinator
 
-    # ----------------------------------------------------------------------------
-    # Perform an initial data load from api.
-    # async_config_entry_first_refresh() is special in that it does not log errors
-    # if it fails.
-    # ----------------------------------------------------------------------------
+    try:
+        await coordinator.async_init()
+    except Exception as err:
+        _LOGGER.error(
+            "Failed to initialize Solem BL-IP for %s: %s",
+            coordinator.controller_mac_address,
+            err,
+            exc_info=True,
+        )
+        raise ConfigEntryNotReady from err
+
+    # First refresh updates entities; failures are logged but must not block setup.
     await coordinator.async_config_entry_first_refresh()
 
-    # ----------------------------------------------------------------------------
-    # Test to see if api initialised correctly, else raise ConfigNotReady to make
-    # HA retry setup.
-    # Change this to match how your api will know if connected or successful
-    # update.
-    # ----------------------------------------------------------------------------
     if not coordinator.data:
-        raise ConfigEntryNotReady
+        _LOGGER.warning(
+            "%s - No initial sensor data; entities will retry on the %ss poll interval",
+            coordinator.controller_mac_address,
+            coordinator.poll_interval,
+        )
 
     # ----------------------------------------------------------------------------
     # Initialise a listener for config flow options changes.

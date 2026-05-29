@@ -20,7 +20,7 @@ from homeassistant.helpers.event import async_track_time_change
 from homeassistant.helpers.event import async_call_later
 
 from .util import mac_to_uuid, ensure_datetime, ensure_aware
-from .bluetooth import async_get_connectable_device
+from .bluetooth import async_get_connectable_device, async_wait_for_connectable_device
 from .models import IrrigationController, IrrigationStation
 from solem_blip_ble import SolemClient
 
@@ -146,8 +146,7 @@ class SolemCoordinator(DataUpdateCoordinator):
         self.storage = Store(hass, 1, f"irrigation_{config_entry.unique_id}")
         self.irrigation_stop_event = asyncio.Event()
         self._irrigation_active = False
-        
-        self.init_task = hass.async_create_task(self.async_init())
+        self._ready = False
     
         _LOGGER.info(f"{self.controller_mac_address} - Coordinator initialization finished!")
 
@@ -376,24 +375,36 @@ class SolemCoordinator(DataUpdateCoordinator):
         )
         _LOGGER.info(f"{self.controller_mac_address} - Scheduled tasks.")
 
-    async def async_init(self):
+    async def async_init(self) -> None:
+        """Load state, connect to the controller, and build initial entity data."""
         await self.load_persistent_data()
-        
-        """Init APIs and schedule tasks."""
-
-        _LOGGER.info(f"{self.controller_mac_address} - Connecting to Solem API...")
-        try:
-            await self.api.connect()
-            _LOGGER.info(f"{self.controller_mac_address} - Connected to Solem API")
-        except Exception as ex:
-            _LOGGER.warning(f"{self.controller_mac_address} - Failed connecting to Solem device ({self.controller_mac_address})!, ex={ex}")
-
         await self.initialize_schedule()
 
-        # Executa imediatamente após inicialização
+        if not self.solem_api_mock:
+            await async_wait_for_connectable_device(
+                self.hass, self.controller_mac_address
+            )
+            _LOGGER.info(
+                "%s - Attempting initial BLE connection...",
+                self.controller_mac_address,
+            )
+            try:
+                await self.api.connect()
+                _LOGGER.info(
+                    "%s - Connected to Solem BLE device",
+                    self.controller_mac_address,
+                )
+            except Exception as ex:
+                _LOGGER.warning(
+                    "%s - Initial BLE connect failed; will retry on poll: %s",
+                    self.controller_mac_address,
+                    ex,
+                )
+
         await self.check_and_schedule_watering()
         await self.setup_scheduled_tasks()
-        self.data = await self.async_update_all_sensors()
+        self._ready = True
+        self.async_set_updated_data(await self.async_update_all_sensors())
 
     async def _fetch_device_status(self) -> dict:
         """Poll device and update controller/station states from BLE status."""
@@ -431,6 +442,9 @@ class SolemCoordinator(DataUpdateCoordinator):
     async def calculate_sprinkle_target_amounts(self) -> list[float]:
         """Calcula os mm que devem ser aplicados hoje por estação, com base na programação."""
         target = [0.0] * self.num_stations
+        if not self.schedule:
+            return target
+
         today = dt_util.now().date()
         current_month_index = today.month - 1
     
@@ -517,6 +531,9 @@ class SolemCoordinator(DataUpdateCoordinator):
 
     async def check_and_schedule_watering(self, *_):
         """Check if there should be watering today and schedule the tasks."""
+        if not self.schedule:
+            return
+
         _LOGGER.info(f"{self.controller_mac_address} - Checking and scheduling watering times...")
 
         today = dt_util.now().date()
@@ -568,6 +585,9 @@ class SolemCoordinator(DataUpdateCoordinator):
         """
         Get next watering time considering configurations.
         """
+        if not self.schedule:
+            return None
+
         _LOGGER.debug(f"{self.controller_mac_address} - Determining next watering schedule...")
         today = dt_util.now().date()
         current_month_index = today.month - 1
