@@ -20,6 +20,8 @@ from homeassistant.components.sensor import (
     SensorStateClass,
 )
 from homeassistant.const import (
+    PERCENTAGE,
+    UnitOfElectricPotential,
     UnitOfPrecipitationDepth,
 )
 from homeassistant.core import HomeAssistant
@@ -61,6 +63,8 @@ async def async_setup_entry(
         SensorTypeClass("TOTAL_FORECASTED_RAIN_TODAY", "state", TotalForecastedRainSensor),
         SensorTypeClass("SPRINKLE_TOTAL_AMOUNT_SENSOR", "state", SprinkleTotalAmountSensor),
         SensorTypeClass("FORECASTED_SPRINKLE_TODAY_SENSOR", "state", ForecastedSprinkleTodaySensor),
+        SensorTypeClass("BATTERY_SENSOR", "state", BatterySensor),
+        SensorTypeClass("BATTERY_VOLTAGE_SENSOR", "state", BatteryVoltageSensor),
     ]
 
     sensors = []
@@ -225,4 +229,32 @@ class ForecastedSprinkleTodaySensor(SolemBaseEntity, SensorEntity):
     @property
     def native_value(self) -> float:
         """Retorna o valor previsto de rega para hoje para esta estação (mm)."""
+        return self.coordinator.get_device_parameter(self.device_id, self.parameter)
+
+
+class BatterySensor(SolemBaseEntity, SensorEntity):
+    _attr_device_class = SensorDeviceClass.BATTERY
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_native_unit_of_measurement = PERCENTAGE
+
+    @property
+    def native_value(self) -> int | None:
+        return self.coordinator.get_device_parameter(self.device_id, self.parameter)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, int | bool | None]:
+        return {
+            "battery_level": self.coordinator.battery_level,
+            "battery_voltage_raw": self.coordinator.battery_voltage,
+        }
+
+
+class BatteryVoltageSensor(SolemBaseEntity, SensorEntity):
+    _attr_device_class = SensorDeviceClass.VOLTAGE
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_native_unit_of_measurement = UnitOfElectricPotential.VOLT
+    _attr_entity_registry_enabled_default = False
+
+    @property
+    def native_value(self) -> float | None:
         return self.coordinator.get_device_parameter(self.device_id, self.parameter)

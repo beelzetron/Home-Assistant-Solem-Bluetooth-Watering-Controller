@@ -39,6 +39,7 @@ async def async_setup_entry(
         BinaryTypeClass("WILL_RAIN_SENSOR", "state", WillRainToday),
         BinaryTypeClass("HAS_RAINED_SENSOR", "state", HasRainedToday),
         BinaryTypeClass("IS_RAINING_SENSOR", "state", IsRainingNow),
+        BinaryTypeClass("BATTERY_LOW_SENSOR", "state", BatteryLow),
     ]
 
     # ----------------------------------------------------------------------------
@@ -109,3 +110,10 @@ class IsRainingNow(BooleanBinarySensor):
         attrs = {}
         attrs["current"] = self.coordinator.is_raining_now_json
         return attrs
+
+class BatteryLow(BooleanBinarySensor):
+    _attr_device_class = BinarySensorDeviceClass.BATTERY
+
+    @property
+    def is_on(self) -> bool | None:
+        return self.coordinator.battery_low

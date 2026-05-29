@@ -147,6 +147,9 @@ class SolemCoordinator(DataUpdateCoordinator):
         self.irrigation_stop_event = asyncio.Event()
         self._irrigation_active = False
         self._ready = False
+        self.battery_voltage: int | None = None
+        self.battery_level: int | None = None
+        self.battery_low = False
     
         _LOGGER.info(f"{self.controller_mac_address} - Coordinator initialization finished!")
 
@@ -410,6 +413,9 @@ class SolemCoordinator(DataUpdateCoordinator):
         """Poll device and update controller/station states from BLE status."""
         status = await self.api.get_status()
         self.controller.state = status.get("controller_state", "Unknown")
+        self.battery_voltage = status.get("battery_voltage")
+        self.battery_level = status.get("battery_level")
+        self.battery_low = bool(status.get("battery_low", False))
 
         if status.get("is_watering") and status.get("station_num"):
             active_station_num = status["station_num"]
@@ -435,7 +441,8 @@ class SolemCoordinator(DataUpdateCoordinator):
         _LOGGER.debug(
             f"{self.controller_mac_address} - Status: Controller={self.controller.state}, "
             f"Watering={status.get('is_watering')}, Station={status.get('station_num')}, "
-            f"Remaining={status.get('remaining_seconds')}s"
+            f"Remaining={status.get('remaining_seconds')}s, "
+            f"Battery={self.battery_voltage} ({self.battery_level}/5)"
         )
         return status
 
@@ -816,6 +823,48 @@ class SolemCoordinator(DataUpdateCoordinator):
             "state": self.controller.state,
             "icon": self.controller.icon,
             "last_reboot": self.controller.last_reboot,
+        })
+        counter += 1
+
+        battery_percent = None
+        if self.battery_level is not None:
+            battery_percent = round(self.battery_level / 5 * 100)
+
+        data.append({
+            "device_id": f"{self.controller_mac_address}_battery",
+            "device_type": "BATTERY_SENSOR",
+            "device_name": "Battery",
+            "device_uid": mac_to_uuid(self.controller_mac_address, counter),
+            "software_version": "1.0",
+            "state": battery_percent,
+            "icon": "mdi:battery",
+            "last_reboot": None,
+        })
+        counter += 1
+        data.append({
+            "device_id": f"{self.controller_mac_address}_battery_voltage",
+            "device_type": "BATTERY_VOLTAGE_SENSOR",
+            "device_name": "Battery voltage",
+            "device_uid": mac_to_uuid(self.controller_mac_address, counter),
+            "software_version": "1.0",
+            "state": (
+                round(self.battery_voltage / 10, 1)
+                if self.battery_voltage is not None
+                else None
+            ),
+            "icon": "mdi:battery-outline",
+            "last_reboot": None,
+        })
+        counter += 1
+        data.append({
+            "device_id": f"{self.controller_mac_address}_battery_low",
+            "device_type": "BATTERY_LOW_SENSOR",
+            "device_name": "Battery low",
+            "device_uid": mac_to_uuid(self.controller_mac_address, counter),
+            "software_version": "1.0",
+            "state": self.battery_low,
+            "icon": "mdi:battery-alert",
+            "last_reboot": None,
         })
         counter += 1
     

@@ -61,6 +61,9 @@ Afterwards an empty irrigation schedule is created. If you want to control it yo
 
 There is a number of sensors that are mande available for each controller/config entry:
 * Controller status - on or off and also has an attribute that stores the schedule in json
+* Battery - percentage (0–100) mapped from MySOLEM level 0–5
+* Battery voltage - estimated volts (raw byte / 10; diagnostic entity, disabled by default)
+* Battery low - binary alert when voltage drops below MySOLEM threshold
 * Station(n) status - stopped or sprinkling
 * Has rained today - true if it has, false otherwise (requires weather entity)
 * Is it raining now - true if it is raining, false otherwise (requires weather entity)
