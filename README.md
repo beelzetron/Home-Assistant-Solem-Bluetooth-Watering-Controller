@@ -1,5 +1,9 @@
 # Home Assistant Solem BL-IP Integration
 
+> **Note:** This beelzetron fork is archived for personal housekeeping. Ongoing minimal BL-IP work (BLE status, battery, manual control + HA automations) lives in **[beelzetron/solem-blip-ha](https://github.com/beelzetron/solem-blip-ha)** — a separate project with a different scope.
+>
+> For the full scheduler integration, rain math, and [Solem Schedule Card](https://github.com/hcraveiro/solem-schedule-card), use **[Henrique Craveiro's original integration](https://github.com/hcraveiro/Home-Assistant-Solem-Bluetooth-Watering-Controller)**.
+
 [![hacs_badge](https://img.shields.io/badge/HACS-Default-41BDF5.svg)](https://github.com/hacs/integration)
 [![GitHub release](https://img.shields.io/github/release/beelzetron/Home-Assistant-Solem-Bluetooth-Watering-Controller.svg)](https://github.com/beelzetron/Home-Assistant-Solem-Bluetooth-Watering-Controller/releases/)
 
