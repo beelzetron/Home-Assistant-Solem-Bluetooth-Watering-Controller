@@ -19,7 +19,7 @@ MONTHS = [
 CHARACTERISTIC_UUID = "108b0002-eab5-bc09-d0ea-0b8f467ce8ee"
 BLUETOOTH_TIMEOUT = "bluetooth_timeout"
 BLUETOOTH_MIN_TIMEOUT = 5
-BLUETOOTH_DEFAULT_TIMEOUT = 15
+BLUETOOTH_DEFAULT_TIMEOUT = 30
 
 OPEN_WEATHER_MAP_FORECAST_URL = "https://api.openweathermap.org/data/2.5/forecast?units=metric&"
 OPEN_WEATHER_MAP_CURRENT_URL = "https://api.openweathermap.org/data/2.5/weather?"
