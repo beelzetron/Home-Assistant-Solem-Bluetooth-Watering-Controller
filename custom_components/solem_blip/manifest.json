@@ -22,6 +22,6 @@
   ],
   "single_config_entry": false,
   "ssdp": [],
-  "version": "2.0.3",
+  "version": "2.0.4",
   "zeroconf": []
 }

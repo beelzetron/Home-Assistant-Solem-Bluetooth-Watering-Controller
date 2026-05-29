@@ -9,7 +9,7 @@
     },
     "error": {
       "cannot_connect": "Failed to connect",
-      "cannot_connect_slots": "Bluetooth adapter or proxy has no free connection slots. Wait a moment and try again, disconnect other BLE devices, or add a Bluetooth proxy closer to the controller.",
+      "cannot_connect_slots": "Bluetooth adapter or proxy has no free connection slots and the controller is not visible in discovery. Wait and retry, close the MySOLEM phone app, check Settings → Bluetooth → Connection monitor, or add a Bluetooth proxy closer to the controller. Disabling passive-only integrations such as iBeacon does not free slots.",
       "invalid_auth": "Invalid authentication",
       "invalid_settings": "Invalid settings",
       "unknown": "Unexpected error"

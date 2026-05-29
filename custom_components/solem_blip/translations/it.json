@@ -9,7 +9,7 @@
     },
     "error": {
       "cannot_connect": "Connessione fallita",
-      "cannot_connect_slots": "L'adattatore o proxy Bluetooth non ha slot di connessione liberi. Attendi qualche secondo e riprova, disconnetti altri dispositivi BLE o aggiungi un proxy Bluetooth più vicino al controller.",
+      "cannot_connect_slots": "L'adattatore o proxy Bluetooth non ha slot liberi e il controller non risulta in discovery. Attendi e riprova, chiudi l'app MySOLEM, controlla Impostazioni → Bluetooth → Monitor connessioni o aggiungi un proxy più vicino. Disabilitare integrazioni passive come iBeacon non libera slot.",
       "invalid_auth": "Autenticazione non valida",
       "invalid_settings": "Impostazioni non valide",
       "unknown": "Errore imprevisto"

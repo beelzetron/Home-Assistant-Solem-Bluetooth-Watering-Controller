@@ -32,7 +32,11 @@ from homeassistant.helpers.selector import selector
 
 from solem_blip_ble import SolemClient, SolemConnectionError
 
-from .bluetooth import async_get_connectable_device, async_scan_devices
+from .bluetooth import (
+    async_get_connectable_device,
+    async_is_device_discovered,
+    async_scan_devices,
+)
 from .const import (
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
@@ -108,6 +112,15 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
     if last_err is None:
         raise CannotConnect
     if "connection slots" in str(last_err).lower():
+        if async_is_device_discovered(hass, address):
+            _LOGGER.warning(
+                "%s - Live BLE connect failed because adapters/proxies are out "
+                "of connection slots, but the controller is visible in Home "
+                "Assistant discovery. Proceeding with setup; the integration "
+                "will connect on first poll.",
+                address,
+            )
+            return {"title": "Solem BL-IP"}
         raise CannotConnectSlots from last_err
     raise CannotConnect from last_err
 

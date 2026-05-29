@@ -29,3 +29,14 @@ def async_get_connectable_device(hass: HomeAssistant, address: str) -> Any | Non
     return bluetooth.async_ble_device_from_address(
         hass, address, connectable=True
     )
+
+
+def async_is_device_discovered(hass: HomeAssistant, address: str) -> bool:
+    """Return True when HA has recently seen this controller advertising."""
+    from homeassistant.components.bluetooth import async_discovered_service_info
+
+    normalized = address.lower()
+    return any(
+        info.address.lower() == normalized
+        for info in async_discovered_service_info(hass, connectable=True)
+    )
