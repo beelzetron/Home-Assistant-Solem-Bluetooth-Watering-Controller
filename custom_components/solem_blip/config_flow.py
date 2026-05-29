@@ -162,7 +162,7 @@ class SolemConfigFlow(ConfigFlow, domain=DOMAIN):
                     }
                 ),
                 vol.Optional(SOIL_MOISTURE_SENSOR, default=soil_sensor_default): selector(
-                    {"entity": {"domain": "sensor", "device_class": "humidity"}}
+                    {"entity": {"domain": "sensor", "device_class": "moisture"}}
                 ),
                 vol.Optional(
                     SOIL_MOISTURE_THRESHOLD, default=soil_threshold_default

@@ -22,7 +22,9 @@
           "weather_entity": "Entità meteo (opzionale)",
           "num_stations": "Numero di stazioni",
           "sensors": "Posizione del controller",
-          "sprinkle_with_rain": "Irrigare anche con pioggia"
+          "sprinkle_with_rain": "Irrigare anche con pioggia",
+          "soil_moisture_sensor": "Sensore umidità del suolo (opzionale)",
+          "soil_moisture_threshold": "Soglia umidità del suolo (%)"
         }
       },
       "reconfigure": {
@@ -32,7 +34,9 @@
           "weather_entity": "Entità meteo (opzionale)",
           "num_stations": "Numero di stazioni",
           "sensors": "Posizione del controller",
-          "sprinkle_with_rain": "Irrigare anche con pioggia"
+          "sprinkle_with_rain": "Irrigare anche con pioggia",
+          "soil_moisture_sensor": "Sensore umidità del suolo (opzionale)",
+          "soil_moisture_threshold": "Soglia umidità del suolo (%)"
         }
       },
       "station_areas": {

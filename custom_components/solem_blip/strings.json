@@ -22,7 +22,9 @@
           "weather_entity": "Weather entity (optional)",
           "num_stations": "Number of stations",
           "sensors": "Controller location",
-          "sprinkle_with_rain": "Sprinkle even when raining"
+          "sprinkle_with_rain": "Sprinkle even when raining",
+          "soil_moisture_sensor": "Soil moisture sensor (optional)",
+          "soil_moisture_threshold": "Soil moisture threshold (%)"
         }
       },
       "reconfigure": {
@@ -32,7 +34,9 @@
           "weather_entity": "Weather entity (optional)",
           "num_stations": "Number of stations",
           "sensors": "Controller location",
-          "sprinkle_with_rain": "Sprinkle even when raining"
+          "sprinkle_with_rain": "Sprinkle even when raining",
+          "soil_moisture_sensor": "Soil moisture sensor (optional)",
+          "soil_moisture_threshold": "Soil moisture threshold (%)"
         }
       },
       "station_areas": {
