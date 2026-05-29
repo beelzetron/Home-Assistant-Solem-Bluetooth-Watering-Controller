@@ -1,6 +1,6 @@
 """Constants for our integration."""
 
-DOMAIN = "solem_bluetooth_watering_controller"
+DOMAIN = "solem_blip"
 
 DEFAULT_SCAN_INTERVAL = 60
 MIN_SCAN_INTERVAL = 10

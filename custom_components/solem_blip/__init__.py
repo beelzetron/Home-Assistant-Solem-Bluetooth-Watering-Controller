@@ -51,7 +51,7 @@ class RuntimeData:
 
 
 async def async_setup_entry(hass: HomeAssistant, config_entry: MyConfigEntry) -> bool:
-    """Set up Solem Integration from a config entry."""
+    """Set up Solem BL-IP from a config entry."""
 
     # ----------------------------------------------------------------------------
     # Initialise the coordinator that manages data updates from your api.

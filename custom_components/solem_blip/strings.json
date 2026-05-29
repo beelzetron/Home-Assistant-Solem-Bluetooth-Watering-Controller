@@ -1,6 +1,7 @@
 {
+  "title": "Solem BL-IP",
   "config": {
-    "title": "Solem Config Flow",
+    "title": "Solem BL-IP setup",
     "abort": {
       "already_configured": "Device is already configured",
       "reconfigure_successful": "Reconfiguration successful",
@@ -56,7 +57,7 @@
           "solem_api_mock": "Mock Solem API for debug"
         },
         "description": "Amend your options.",
-        "title": "Solem Integration Options"
+        "title": "Solem BL-IP options"
       }
     }
   },

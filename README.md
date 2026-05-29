@@ -1,11 +1,11 @@
-# Home Assistant Solem Bluetooth Watering Controller Integration
+# Home Assistant Solem BL-IP Integration
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Default-41BDF5.svg)](https://github.com/hacs/integration)
-[![GitHub release](https://img.shields.io/github/release/hcraveiro/Home-Assistant-Solem-Bluetooth-Watering-Controller.svg)](https://github.com/hcraveiro/Home-Assistant-Solem-Bluetooth-Watering-Controller/releases/)
+[![GitHub release](https://img.shields.io/github/release/beelzetron/Home-Assistant-Solem-Bluetooth-Watering-Controller.svg)](https://github.com/beelzetron/Home-Assistant-Solem-Bluetooth-Watering-Controller/releases/)
 
-Integrate Solem Watering Bluetooth Controllers (only tested in BL-IP) into your Home Assistant. This Integration allows you to manually control the irrigation or to createa a schedule.
+Integrate the Solem **BL-IP** Bluetooth irrigation controller into Home Assistant. This integration allows you to manually control irrigation or create a schedule.
 
-- [Home Assistant Solem Bluetooth Watering Controller Integration](#home-assistant-solem-bluetooth-watering-controller-integration)
+- [Home Assistant Solem BL-IP Integration](#home-assistant-solem-bl-ip-integration)
     - [Installation](#installation)
     - [Configuration](#configuration)
     - [Documentation](#documentation)
@@ -14,7 +14,7 @@ Integrate Solem Watering Bluetooth Controllers (only tested in BL-IP) into your 
 
 ## Installation
 
-This integration depends on the **`solem-blip-ble`** Python package ([source](https://github.com/beelzetron/solem-blip-ble)). Home Assistant installs it from GitHub (`v0.1.5` tag) via the integration manifest until the package is published on PyPI.
+This integration depends on the **`solem-blip-ble`** Python package ([source](https://github.com/beelzetron/solem-blip-ble)). Home Assistant installs it from GitHub (`v0.1.5` tag) via the integration manifest.
 
 For local development against a checkout of the library (overrides the git install):
 
@@ -24,7 +24,7 @@ pip install -e /path/to/solem-blip-ble
 
 This integration can be added as a custom repository in HACS and from there you can install it.
 
-When the integration is installed in HACS, you need to add it in Home Assistant: Settings → Devices & Services → Add Integration → Search for Solem Bluetooth Watering Controller.
+When the integration is installed in HACS, you need to add it in Home Assistant: Settings → Devices & Services → Add Integration → Search for **Solem BL-IP**.
 
 The configuration happens in the configuration flow when you add the integration.
 If you want to configure the schedule you should install the card [Solem Schedule Card](https://github.com/hcraveiro/solem-schedule-card).
@@ -35,7 +35,7 @@ BLE protocol (commands, notifications, remaining-time byte layout): [solem-blip-
 
 ## Configuration
 
-For each controller that you want to use, you should add a config entry. You will have a config flow where it is asked:
+For each BL-IP controller that you want to use, you should add a config entry. You will have a config flow where it is asked:
 * which is the bluetooth device
 * the number of stations your controller have
 * the controller location (it loads the zones you have in HA)
@@ -70,4 +70,4 @@ There is a number of sensors that are mande available for each controller/config
 
 ### Can I configure other controller models?
 
-Not, yet, I haven't reverse engineered yet other controllers other than BLIP.I'm planning to do it on BLNR soon, though.
+No. This integration targets the **BL-IP** only. Other Solem models are not supported yet.

@@ -14,7 +14,7 @@ from homeassistant.const import (
     CONF_SENSORS,
     CONF_SCAN_INTERVAL,
 )
-from homeassistant.core import DOMAIN, HomeAssistant
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.helpers.event import async_track_time_change
 from homeassistant.helpers.event import async_call_later
@@ -25,6 +25,7 @@ from solem_blip_ble import SolemClient
 
 from .api import OpenWeatherMapAPI, APIConnectionError
 from .const import (
+    DOMAIN,
     DEFAULT_SCAN_INTERVAL,
     CONTROLLER_MAC_ADDRESS,
     NUM_STATIONS,

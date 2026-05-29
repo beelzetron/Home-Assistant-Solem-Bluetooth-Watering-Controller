@@ -1,0 +1,72 @@
+{
+  "title": "Solem BL-IP",
+  "config": {
+    "title": "Configurazione Solem BL-IP",
+    "abort": {
+      "already_configured": "Dispositivo già configurato",
+      "reconfigure_successful": "Riconfigurazione completata",
+      "already_in_progress": "È già in corso una configurazione per questa integrazione"
+    },
+    "error": {
+      "cannot_connect": "Connessione fallita",
+      "invalid_auth": "Autenticazione non valida",
+      "invalid_settings": "Impostazioni non valide",
+      "unknown": "Errore imprevisto"
+    },
+    "step": {
+      "user": {
+        "title": "Dati di base",
+        "data": {
+          "controller_mac_address": "Indirizzo MAC del controller",
+          "open_weather_map_api_key": "Chiave API OpenWeatherMap",
+          "num_stations": "Numero di stazioni",
+          "sensors": "Posizione del controller",
+          "sprinkle_with_rain": "Irrigare anche con pioggia"
+        }
+      },
+      "reconfigure": {
+        "data": {
+          "controller_mac_address": "Indirizzo MAC del controller",
+          "open_weather_map_api_key": "Chiave API OpenWeatherMap",
+          "num_stations": "Numero di stazioni",
+          "sensors": "Posizione del controller",
+          "sprinkle_with_rain": "Irrigare anche con pioggia"
+        }
+      },
+      "station_areas": {
+        "title": "Superficie prato per stazione",
+        "description": "Indica la superficie in metri quadrati (m²) per ogni stazione.",
+        "data": {
+          "station_1_area": "Superficie stazione 1 (m²)",
+          "station_2_area": "Superficie stazione 2 (m²)",
+          "station_3_area": "Superficie stazione 3 (m²)",
+          "station_4_area": "Superficie stazione 4 (m²)",
+          "station_5_area": "Superficie stazione 5 (m²)",
+          "station_6_area": "Superficie stazione 6 (m²)"
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "scan_interval": "Intervallo di scansione (secondi)",
+          "bluetooth_timeout": "Timeout Bluetooth (secondi)",
+          "openweathermap_api_cache_timeout": "Timeout cache API OpenWeatherMap (minuti)",
+          "solem_api_mock": "Simula API Solem (debug)"
+        },
+        "description": "Modifica le opzioni.",
+        "title": "Opzioni Solem BL-IP"
+      }
+    }
+  },
+  "selector": {
+    "true_false_selector": {
+      "options": {
+        "true": "Sì",
+        "false": "No"
+      }
+    }
+  }
+}

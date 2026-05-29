@@ -1,4 +1,4 @@
-"""OpenWeatherMap API for Solem Bluetooth Watering Controller."""
+"""OpenWeatherMap API for Solem BL-IP integration."""
 
 from __future__ import annotations
 

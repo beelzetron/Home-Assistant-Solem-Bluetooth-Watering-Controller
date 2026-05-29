@@ -1,12 +1,12 @@
 {
-  "domain": "solem_bluetooth_watering_controller",
-  "name": "Solem Bluetooth Watering Controller",
+  "domain": "solem_blip",
+  "name": "Solem BL-IP",
   "codeowners": [
     "@hcraveiro"
   ],
   "config_flow": true,
   "dependencies": ["bluetooth_adapters"],
-  "documentation": "https://github.com/hcraveiro/Home-Assistant-Solem-Bluetooth-Watering-Controller",
+  "documentation": "https://github.com/beelzetron/Home-Assistant-Solem-Bluetooth-Watering-Controller",
   "homekit": {},
   "iot_class": "local_polling",
   "integration_type": "device",

@@ -82,7 +82,7 @@ class SolemBaseEntity(CoordinatorEntity):
         return DeviceInfo(
             name=self.coordinator.controller_mac_address,
             manufacturer="Solem",
-            model=self.coordinator.config_entry.data[CONTROLLER_MAC_ADDRESS].split('-')[0],
+            model="BL-IP",
             sw_version="1.0",
             identifiers={
                 (

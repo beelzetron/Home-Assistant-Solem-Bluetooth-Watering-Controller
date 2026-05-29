@@ -76,7 +76,7 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
         _LOGGER.debug(f"Connected to Bluetooth controller {mac_address[1]}")
     except (APIConnectionError, SolemConnectionError) as err:
         raise CannotConnect from err
-    return {"title": f"Solem Bluetooth Watering Controller"}
+    return {"title": "Solem BL-IP"}
 
 
 async def validate_settings(hass: HomeAssistant, data: dict[str, Any]) -> bool:
@@ -85,7 +85,7 @@ async def validate_settings(hass: HomeAssistant, data: dict[str, Any]) -> bool:
 
 
 class SolemConfigFlow(ConfigFlow, domain=DOMAIN):
-    """Handle a config flow for Solem Integration."""
+    """Handle a config flow for Solem BL-IP."""
 
     VERSION = 1
     _input_data: dict[str, Any]
