@@ -21,7 +21,9 @@ from homeassistant.helpers.event import async_call_later
 
 from .util import mac_to_uuid, ensure_datetime, ensure_aware
 from .models import IrrigationController, IrrigationStation
-from .api import SolemAPI, OpenWeatherMapAPI, APIConnectionError
+from solem_blip_ble import SolemClient
+
+from .api import OpenWeatherMapAPI, APIConnectionError
 from .const import (
     DEFAULT_SCAN_INTERVAL,
     CONTROLLER_MAC_ADDRESS,
@@ -118,10 +120,15 @@ class SolemCoordinator(DataUpdateCoordinator):
             for station_id in range(1, self.num_stations + 1)
         ]
         
-        self.api = SolemAPI(mac_address=self.controller_mac_address, bluetooth_timeout=self.bluetooth_timeout)
+        self.api = SolemClient(
+            self.controller_mac_address,
+            bluetooth_timeout=self.bluetooth_timeout,
+            mock=self.solem_api_mock,
+        )
         self.weather_api = OpenWeatherMapAPI(self.openweathermap_api_key, self.latitude, self.longitude, self.openweathermap_api_timeout)
         self.storage = Store(hass, 1, f"irrigation_{config_entry.unique_id}")
         self.irrigation_stop_event = asyncio.Event()
+        self._irrigation_active = False
         
         self.init_task = hass.async_create_task(self.async_init())
     
@@ -159,7 +166,11 @@ class SolemCoordinator(DataUpdateCoordinator):
         )
         self.solem_api_mock = config_entry.options.get(SOLEM_API_MOCK, "false") == "true"
 
-        self.api = SolemAPI(mac_address=self.controller_mac_address, bluetooth_timeout=self.bluetooth_timeout)
+        self.api = SolemClient(
+            self.controller_mac_address,
+            bluetooth_timeout=self.bluetooth_timeout,
+            mock=self.solem_api_mock,
+        )
         self.weather_api = OpenWeatherMapAPI(self.openweathermap_api_key, self.latitude, self.longitude, self.openweathermap_api_timeout)
 
         self.num_stations = config_entry.data.get("num_stations", 2)
@@ -342,7 +353,6 @@ class SolemCoordinator(DataUpdateCoordinator):
 
         _LOGGER.info(f"{self.controller_mac_address} - Connecting to Solem API...")
         try:
-            self.api.mock = self.solem_api_mock
             await self.api.connect()
             _LOGGER.info(f"{self.controller_mac_address} - Connected to Solem API")
         except Exception as ex:
@@ -354,6 +364,39 @@ class SolemCoordinator(DataUpdateCoordinator):
         await self.check_and_schedule_watering()
         await self.setup_scheduled_tasks()
         self.data = await self.async_update_all_sensors()
+
+    async def _fetch_device_status(self) -> dict:
+        """Poll device and update controller/station states from BLE status."""
+        status = await self.api.get_status()
+        self.controller.state = status.get("controller_state", "Unknown")
+
+        if status.get("is_watering") and status.get("station_num"):
+            active_station_num = status["station_num"]
+            if 1 <= active_station_num <= self.num_stations:
+                self.stations[active_station_num - 1].state = "Sprinkling"
+                for i, station in enumerate(self.stations):
+                    if i + 1 != active_station_num:
+                        station.state = "Stopped"
+            else:
+                _LOGGER.warning(
+                    f"{self.controller_mac_address} - Watering on station "
+                    f"{active_station_num} outside configured range 1-{self.num_stations}"
+                )
+        elif not status.get("is_watering"):
+            for station in self.stations:
+                station.state = "Stopped"
+        else:
+            _LOGGER.warning(
+                f"{self.controller_mac_address} - Watering active but no station "
+                f"in status; keeping existing station states"
+            )
+
+        _LOGGER.debug(
+            f"{self.controller_mac_address} - Status: Controller={self.controller.state}, "
+            f"Watering={status.get('is_watering')}, Station={status.get('station_num')}, "
+            f"Remaining={status.get('remaining_seconds')}s"
+        )
+        return status
 
     async def calculate_sprinkle_target_amounts(self) -> list[float]:
         """Calcula os mm que devem ser aplicados hoje por estação, com base na programação."""
@@ -621,52 +664,21 @@ class SolemCoordinator(DataUpdateCoordinator):
         if not hasattr(self, 'last_reset'):
             self.last_reset = None
         
-        # =========================================================================
-        # Fetch real controller status from device
-        # =========================================================================
-        try:
-            status = await self.api.get_status()
-            self.controller.state = status.get("controller_state", "Unknown")
-
-            if status.get("is_watering") and status.get("station_num"):
-                active_station_num = status["station_num"]
-                if 1 <= active_station_num <= self.num_stations:
-                    self.stations[active_station_num - 1].state = "Sprinkling"
-                    for i, station in enumerate(self.stations):
-                        if i + 1 != active_station_num:
-                            station.state = "Stopped"
-                else:
-                    _LOGGER.warning(
-                        f"{self.controller_mac_address} - Watering on station "
-                        f"{active_station_num} outside configured range 1-{self.num_stations}"
-                    )
-            elif not status.get("is_watering"):
-                for station in self.stations:
-                    station.state = "Stopped"
-            else:
+        if not self._irrigation_active:
+            try:
+                await self._fetch_device_status()
+            except APIConnectionError as ex:
                 _LOGGER.warning(
-                    f"{self.controller_mac_address} - Watering active but no station "
-                    f"in status; keeping existing station states"
+                    f"{self.controller_mac_address} - Failed to get device status, "
+                    f"keeping last known states: {ex}"
+                )
+            except Exception as ex:
+                _LOGGER.error(
+                    f"{self.controller_mac_address} - Unexpected error getting status, "
+                    f"keeping last known states: {ex}",
+                    exc_info=True,
                 )
 
-            _LOGGER.debug(
-                f"{self.controller_mac_address} - Status: Controller={self.controller.state}, "
-                f"Watering={status.get('is_watering')}, Station={status.get('station_num')}, "
-                f"Remaining={status.get('remaining_seconds')}s"
-            )
-
-        except APIConnectionError as ex:
-            _LOGGER.warning(
-                f"{self.controller_mac_address} - Failed to get device status, "
-                f"keeping last known states: {ex}"
-            )
-        except Exception as ex:
-            _LOGGER.error(
-                f"{self.controller_mac_address} - Unexpected error getting status, "
-                f"keeping last known states: {ex}",
-                exc_info=True,
-            )
-        
         # Verifies if it's after 00:05:00
         now = dt_util.now()
         if now.time() > datetime.strptime("00:05:00", "%H:%M:%S").time():
@@ -987,47 +999,101 @@ class SolemCoordinator(DataUpdateCoordinator):
 
     async def start_irrigation(self, station: int, minutes: int | None = None):
         duration = int(minutes if minutes is not None else self.irrigation_manual_duration)
-        _LOGGER.info(f"{self.controller_mac_address} - Going to start watering on station {station} for {duration} minutes...")
-        
+        _LOGGER.info(
+            f"{self.controller_mac_address} - Starting watering on station {station} "
+            f"for {duration} minutes..."
+        )
+
+        self.irrigation_stop_event.clear()
+
         try:
             await self.api.sprinkle_station_x_for_y_minutes(station, duration)
-        except APIConnectionError as ex:
+        except APIConnectionError:
             _LOGGER.error(f"{self.controller_mac_address} - Failed due to connection error.")
             return
-        
-        self.stations[station - 1].state = "Sprinkling"
-        data = await self.async_update_all_sensors()
-        if data is not None:  # Update only if data is valid
-            self.async_set_updated_data(data)
-        else:
-            _LOGGER.warning(f"{self.controller_mac_address} - async_update_all_sensors() returned None, skipping update.")
 
-        for _ in range(duration * 60):
-            # Verify if exit condition is met
-            if self.irrigation_stop_event.is_set():
-                _LOGGER.info(f"{self.controller_mac_address} - Irrigation cancelation triggered.")
-                break
-            await sleep(1)  # Validate every second
-            self.total_water_consumption += (self.water_flow_rate[station - 1] / 60)
-            
-            # Calculate mm of water applied
-            flow_rate = self.water_flow_rate[station - 1]  # L/min
-            area = self.station_areas[station - 1] or 1  # m², avoid division by zero
-            mm_per_minute = flow_rate / area  # mm/min
-            self.sprinkle_total_amount_today[station - 1] += mm_per_minute / 60  # mm per second
+        await self._monitor_irrigation_until_complete(station, duration)
 
-        else:  # Só entra aqui se o loop terminar normalmente (sem interrupção)
-            self.stations[station - 1].state = "Stopped"
-            _LOGGER.info(f"{self.controller_mac_address} - Finished watering on station {station}.")
-        
         now = dt_util.now()
         self.last_sprinkle = now
-    
+
         data = await self.async_update_all_sensors()
-        if data is not None:  # Update only if data is valid
+        if data is not None:
             self.async_set_updated_data(data)
         else:
-            _LOGGER.warning(f"{self.controller_mac_address} - async_update_all_sensors() returned None, skipping update.")
+            _LOGGER.warning(
+                f"{self.controller_mac_address} - async_update_all_sensors() returned None, "
+                "skipping update."
+            )
+
+    async def _monitor_irrigation_until_complete(self, station: int, duration: int) -> None:
+        """Poll BLE status until watering stops or safety timeout."""
+        poll_interval = max(2, min(self.poll_interval, 10))
+        max_seconds = duration * 60 + 30
+        elapsed = 0.0
+        last_tick = dt_util.now()
+
+        self._irrigation_active = True
+        self.stations[station - 1].state = "Sprinkling"
+
+        try:
+            data = await self.async_update_all_sensors()
+            if data is not None:
+                self.async_set_updated_data(data)
+
+            while elapsed < max_seconds:
+                if self.irrigation_stop_event.is_set():
+                    _LOGGER.info(
+                        f"{self.controller_mac_address} - Irrigation cancellation triggered."
+                    )
+                    break
+
+                await sleep(poll_interval)
+                elapsed += poll_interval
+
+                now = dt_util.now()
+                tick_seconds = (now - last_tick).total_seconds()
+                last_tick = now
+
+                self.total_water_consumption += (self.water_flow_rate[station - 1] / 60) * tick_seconds
+                flow_rate = self.water_flow_rate[station - 1]
+                area = self.station_areas[station - 1] or 1
+                mm_per_second = (flow_rate / area) / 60
+                self.sprinkle_total_amount_today[station - 1] += mm_per_second * tick_seconds
+
+                try:
+                    status = await self.api.get_status()
+                except APIConnectionError as ex:
+                    _LOGGER.warning(
+                        f"{self.controller_mac_address} - Status poll failed during "
+                        f"irrigation: {ex}"
+                    )
+                    continue
+
+                self.controller.state = status.get("controller_state", self.controller.state)
+                if status.get("is_watering") and status.get("station_num") == station:
+                    self.stations[station - 1].state = "Sprinkling"
+                elif not status.get("is_watering"):
+                    _LOGGER.info(
+                        f"{self.controller_mac_address} - Device reports watering finished."
+                    )
+                    break
+
+                data = await self.async_update_all_sensors()
+                if data is not None:
+                    self.async_set_updated_data(data)
+            else:
+                _LOGGER.warning(
+                    f"{self.controller_mac_address} - Irrigation monitor hit safety timeout "
+                    f"after {max_seconds}s"
+                )
+        finally:
+            self._irrigation_active = False
+            for station_id in range(1, self.num_stations + 1):
+                self.stations[station_id - 1].state = "Stopped"
+            _LOGGER.info(
+                f"{self.controller_mac_address} - Finished watering on station {station}."
+            )
 
     async def stop_irrigation(self):
         _LOGGER.info(f"{self.controller_mac_address} - Stopping watering...")

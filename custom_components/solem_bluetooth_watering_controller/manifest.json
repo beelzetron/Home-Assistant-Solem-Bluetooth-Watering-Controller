@@ -5,13 +5,24 @@
     "@hcraveiro"
   ],
   "config_flow": true,
-  "dependencies": [],
+  "dependencies": ["bluetooth_adapters"],
   "documentation": "https://github.com/hcraveiro/Home-Assistant-Solem-Bluetooth-Watering-Controller",
   "homekit": {},
   "iot_class": "local_polling",
-  "requirements": ["tenacity"],
+  "integration_type": "device",
+  "requirements": [
+    "solem-blip-ble@git+https://github.com/beelzetron/solem-blip-ble.git@v0.1.4",
+    "aiohttp",
+    "tenacity"
+  ],
+  "bluetooth": [
+    {
+      "connectable": true,
+      "service_uuid": "108b0002-eab5-bc09-d0ea-0b8f467ce8ee"
+    }
+  ],
   "single_config_entry": false,
   "ssdp": [],
-  "version": "1.0.3",
+  "version": "1.1.0",
   "zeroconf": []
 }

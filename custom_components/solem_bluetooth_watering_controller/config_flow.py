@@ -29,7 +29,10 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.selector import selector
 
-from .api import SolemAPI, APIConnectionError
+from solem_blip_ble import SolemClient, SolemConnectionError
+
+from .api import APIConnectionError
+from .bluetooth import async_scan_devices
 from .const import (
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
@@ -68,10 +71,10 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
         # ----------------------------------------------------------------------------
         mac_address = data[CONTROLLER_MAC_ADDRESS].rsplit(' - ', 1)
         _LOGGER.debug(mac_address)
-        api = SolemAPI(mac_address[1], BLUETOOTH_DEFAULT_TIMEOUT)
+        api = SolemClient(mac_address[1], BLUETOOTH_DEFAULT_TIMEOUT)
         await api.connect()
         _LOGGER.debug(f"Connected to Bluetooth controller {mac_address[1]}")
-    except APIConnectionError as err:
+    except (APIConnectionError, SolemConnectionError) as err:
         raise CannotConnect from err
     return {"title": f"Solem Bluetooth Watering Controller"}
 
@@ -156,8 +159,7 @@ class SolemConfigFlow(ConfigFlow, domain=DOMAIN):
 
         existing_entries = {entry.data.get(CONTROLLER_MAC_ADDRESS) for entry in self.hass.config_entries.async_entries(DOMAIN)}
 
-        api = SolemAPI(None, BLUETOOTH_DEFAULT_TIMEOUT)
-        bt_devices = await api.scan_bluetooth()
+        bt_devices = await async_scan_devices(self.hass)
         options = [
             {"value": f"{device.name or 'Unknown'} - {device.address}", "label": f"{device.name or 'Unknown'} - {device.address}"}
             for device in bt_devices
@@ -287,8 +289,7 @@ class SolemConfigFlow(ConfigFlow, domain=DOMAIN):
                 
                 return await self.async_step_station_areas_reconfigure()
 
-        api = SolemAPI(None, BLUETOOTH_DEFAULT_TIMEOUT)
-        bt_devices = await api.scan_bluetooth()
+        bt_devices = await async_scan_devices(self.hass)
         options = [
             {"value": f"{device.name or 'Unknown'} - {device.address}", "label": f"{device.name or 'Unknown'} - {device.address}"}
             for device in bt_devices
