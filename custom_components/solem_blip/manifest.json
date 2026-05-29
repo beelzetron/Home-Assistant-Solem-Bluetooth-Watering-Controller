@@ -11,7 +11,7 @@
   "iot_class": "local_polling",
   "integration_type": "device",
   "requirements": [
-    "solem-blip-ble>=0.1.9",
+    "solem-blip-ble>=0.1.10",
     "tenacity"
   ],
   "bluetooth": [
@@ -22,6 +22,6 @@
   ],
   "single_config_entry": false,
   "ssdp": [],
-  "version": "2.0.2",
+  "version": "2.0.3",
   "zeroconf": []
 }

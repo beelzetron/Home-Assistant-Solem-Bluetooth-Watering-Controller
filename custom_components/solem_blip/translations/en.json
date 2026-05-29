@@ -9,6 +9,7 @@
     },
     "error": {
       "cannot_connect": "Failed to connect",
+      "cannot_connect_slots": "Bluetooth adapter or proxy has no free connection slots. Wait a moment and try again, disconnect other BLE devices, or add a Bluetooth proxy closer to the controller.",
       "invalid_auth": "Invalid authentication",
       "invalid_settings": "Invalid settings",
       "unknown": "Unexpected error"

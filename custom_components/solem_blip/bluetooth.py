@@ -20,3 +20,12 @@ async def async_scan_devices(hass: HomeAssistant, connectable: bool = True) -> l
         from bleak import BleakScanner
 
         return await BleakScanner.discover(timeout=5.0)
+
+
+def async_get_connectable_device(hass: HomeAssistant, address: str) -> Any | None:
+    """Return the HA-resolved BLEDevice for a connectable controller."""
+    from homeassistant.components import bluetooth
+
+    return bluetooth.async_ble_device_from_address(
+        hass, address, connectable=True
+    )

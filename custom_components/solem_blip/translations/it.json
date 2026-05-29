@@ -9,6 +9,7 @@
     },
     "error": {
       "cannot_connect": "Connessione fallita",
+      "cannot_connect_slots": "L'adattatore o proxy Bluetooth non ha slot di connessione liberi. Attendi qualche secondo e riprova, disconnetti altri dispositivi BLE o aggiungi un proxy Bluetooth più vicino al controller.",
       "invalid_auth": "Autenticazione non valida",
       "invalid_settings": "Impostazioni non valide",
       "unknown": "Errore imprevisto"

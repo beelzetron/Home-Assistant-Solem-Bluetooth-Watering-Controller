@@ -9,6 +9,7 @@ Using your api data in your flow
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import Any
 
@@ -31,8 +32,7 @@ from homeassistant.helpers.selector import selector
 
 from solem_blip_ble import SolemClient, SolemConnectionError
 
-from .api import APIConnectionError
-from .bluetooth import async_scan_devices
+from .bluetooth import async_get_connectable_device, async_scan_devices
 from .const import (
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
@@ -49,6 +49,9 @@ from .const import (
     BLUETOOTH_TIMEOUT,
     BLUETOOTH_MIN_TIMEOUT,
     BLUETOOTH_DEFAULT_TIMEOUT,
+    CONFIG_FLOW_BLUETOOTH_TIMEOUT,
+    CONFIG_FLOW_CONNECT_RETRIES,
+    CONFIG_FLOW_CONNECT_RETRY_DELAY,
     WEATHER_CACHE_TIMEOUT,
     WEATHER_CACHE_MIN_TIMEOUT,
     WEATHER_CACHE_DEFAULT_TIMEOUT,
@@ -60,24 +63,53 @@ _LOGGER = logging.getLogger(__name__)
 
 
 async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str, Any]:
-    """Validate the user input allows us to connect.
+    """Validate the user input allows us to connect."""
+    mac_address = data[CONTROLLER_MAC_ADDRESS].rsplit(" - ", 1)
+    address = mac_address[1]
+    _LOGGER.debug("Validating BLE connection to %s", address)
 
-    Data has the keys from STEP_USER_DATA_SCHEMA with values provided by the user.
-    """
+    def _resolve_ble_device():
+        return async_get_connectable_device(hass, address)
+
+    if _resolve_ble_device() is None:
+        raise CannotConnect
+
+    api = SolemClient(
+        address,
+        CONFIG_FLOW_BLUETOOTH_TIMEOUT,
+        ble_device_resolver=_resolve_ble_device,
+    )
+
+    last_err: Exception | None = None
     try:
-        # ----------------------------------------------------------------------------
-        # If your api is not async, use the executor to access it
-        # If you cannot connect, raise CannotConnect
-        # If the authentication is wrong, raise InvalidAuth
-        # ----------------------------------------------------------------------------
-        mac_address = data[CONTROLLER_MAC_ADDRESS].rsplit(' - ', 1)
-        _LOGGER.debug(mac_address)
-        api = SolemClient(mac_address[1], BLUETOOTH_DEFAULT_TIMEOUT)
-        await api.connect()
-        _LOGGER.debug(f"Connected to Bluetooth controller {mac_address[1]}")
-    except (APIConnectionError, SolemConnectionError) as err:
-        raise CannotConnect from err
-    return {"title": "Solem BL-IP"}
+        for attempt in range(CONFIG_FLOW_CONNECT_RETRIES):
+            try:
+                await api.connect()
+                _LOGGER.debug("Connected to Bluetooth controller %s", address)
+                return {"title": "Solem BL-IP"}
+            except SolemConnectionError as err:
+                last_err = err
+                if (
+                    "connection slots" in str(err).lower()
+                    and attempt < CONFIG_FLOW_CONNECT_RETRIES - 1
+                ):
+                    _LOGGER.debug(
+                        "BLE connection slots busy for %s, retrying (%s/%s)",
+                        address,
+                        attempt + 1,
+                        CONFIG_FLOW_CONNECT_RETRIES,
+                    )
+                    await asyncio.sleep(CONFIG_FLOW_CONNECT_RETRY_DELAY)
+                    continue
+                break
+    finally:
+        await api.disconnect()
+
+    if last_err is None:
+        raise CannotConnect
+    if "connection slots" in str(last_err).lower():
+        raise CannotConnectSlots from last_err
+    raise CannotConnect from last_err
 
 
 async def validate_settings(hass: HomeAssistant, data: dict[str, Any]) -> bool:
@@ -190,6 +222,9 @@ class SolemConfigFlow(ConfigFlow, domain=DOMAIN):
                 # The errors["base"] values match the values in your strings.json and translation files.
                 # ----------------------------------------------------------------------------
                 info = await validate_input(self.hass, user_input)
+            except CannotConnectSlots:
+                errors["base"] = "cannot_connect_slots"
+                _LOGGER.exception("Bluetooth connection slots unavailable")
             except CannotConnect:
                 errors["base"] = "cannot_connect"
                 _LOGGER.exception("Cannot connect")
@@ -301,6 +336,9 @@ class SolemConfigFlow(ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             try:
                 await validate_input(self.hass, user_input)
+            except CannotConnectSlots:
+                errors["base"] = "cannot_connect_slots"
+                _LOGGER.exception("Bluetooth connection slots unavailable")
             except CannotConnect:
                 errors["base"] = "cannot_connect"
                 _LOGGER.exception("Cannot connect")
@@ -460,6 +498,10 @@ class SolemOptionsFlowHandler(OptionsFlow):
         return self.async_show_form(step_id="init", data_schema=data_schema)
 class CannotConnect(HomeAssistantError):
     """Error to indicate we cannot connect."""
+
+
+class CannotConnectSlots(CannotConnect):
+    """Error to indicate Bluetooth adapters/proxies are out of connection slots."""
 
 
 class InvalidAuth(HomeAssistantError):

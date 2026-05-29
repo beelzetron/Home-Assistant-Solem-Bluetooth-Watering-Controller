@@ -20,6 +20,7 @@ from homeassistant.helpers.event import async_track_time_change
 from homeassistant.helpers.event import async_call_later
 
 from .util import mac_to_uuid, ensure_datetime, ensure_aware
+from .bluetooth import async_get_connectable_device
 from .models import IrrigationController, IrrigationStation
 from solem_blip_ble import SolemClient
 
@@ -133,6 +134,9 @@ class SolemCoordinator(DataUpdateCoordinator):
             self.controller_mac_address,
             bluetooth_timeout=self.bluetooth_timeout,
             mock=self.solem_api_mock,
+            ble_device_resolver=lambda: async_get_connectable_device(
+                hass, self.controller_mac_address
+            ),
         )
         self.weather_api = HomeAssistantWeatherProvider(
             hass,
@@ -189,6 +193,9 @@ class SolemCoordinator(DataUpdateCoordinator):
             self.controller_mac_address,
             bluetooth_timeout=self.bluetooth_timeout,
             mock=self.solem_api_mock,
+            ble_device_resolver=lambda: async_get_connectable_device(
+                hass, self.controller_mac_address
+            ),
         )
         self.weather_api = HomeAssistantWeatherProvider(
             hass,
