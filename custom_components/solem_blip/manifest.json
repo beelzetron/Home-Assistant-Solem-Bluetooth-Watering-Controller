@@ -11,7 +11,7 @@
   "iot_class": "local_polling",
   "integration_type": "device",
   "requirements": [
-    "solem-blip-ble@git+https://github.com/beelzetron/solem-blip-ble.git@v0.1.5",
+    "solem-blip-ble>=0.1.5",
     "aiohttp",
     "tenacity"
   ],

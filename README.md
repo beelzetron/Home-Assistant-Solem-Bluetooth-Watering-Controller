@@ -14,17 +14,30 @@ Integrate the Solem **BL-IP** Bluetooth irrigation controller into Home Assistan
 
 ## Installation
 
-This integration depends on the **`solem-blip-ble`** Python package ([source](https://github.com/beelzetron/solem-blip-ble)). Home Assistant installs it from GitHub (`v0.1.5` tag) via the integration manifest.
+This integration depends on the **`solem-blip-ble`** Python package ([PyPI](https://pypi.org/project/solem-blip-ble/), [source](https://github.com/beelzetron/solem-blip-ble)). Home Assistant installs it from PyPI automatically when you set up the integration.
 
-For local development against a checkout of the library (overrides the git install):
+For local development against a checkout of the library (overrides the PyPI install):
 
 ```bash
 pip install -e /path/to/solem-blip-ble
 ```
 
-This integration can be added as a custom repository in HACS and from there you can install it.
+### HACS
 
-When the integration is installed in HACS, you need to add it in Home Assistant: Settings → Devices & Services → Add Integration → Search for **Solem BL-IP**.
+Use this link to directly open this repository in HACS:
+
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=beelzetron&repository=Home-Assistant-Solem-Bluetooth-Watering-Controller&category=integration)
+
+_or_
+
+1. Install [HACS](https://hacs.xyz/) if you do not have it already
+2. Open HACS → **Integrations**
+3. Open the menu (⋮) → **Custom repositories**
+4. Add `https://github.com/beelzetron/Home-Assistant-Solem-Bluetooth-Watering-Controller` as category **Integration**
+5. Search for **Solem BL-IP** and install
+6. Restart Home Assistant
+
+When the integration is installed in HACS, add it in Home Assistant: Settings → Devices & Services → Add Integration → Search for **Solem BL-IP**.
 
 The configuration happens in the configuration flow when you add the integration.
 If you want to configure the schedule you should install the card [Solem Schedule Card](https://github.com/hcraveiro/solem-schedule-card).
