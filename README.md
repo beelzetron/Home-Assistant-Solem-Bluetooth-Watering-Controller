@@ -8,6 +8,7 @@ Integrate Solem Watering Bluetooth Controllers (only tested in BL-IP) into your 
 - [Home Assistant Solem Bluetooth Watering Controller Integration](#home-assistant-solem-bluetooth-watering-controller-integration)
     - [Installation](#installation)
     - [Configuration](#configuration)
+    - [Documentation](#documentation)
     - [Sensors](#sensors)
     - [FAQ](#faq)
 
@@ -27,6 +28,10 @@ When the integration is installed in HACS, you need to add it in Home Assistant:
 
 The configuration happens in the configuration flow when you add the integration.
 If you want to configure the schedule you should install the card [Solem Schedule Card](https://github.com/hcraveiro/solem-schedule-card).
+
+## Documentation
+
+BLE protocol (commands, notifications, remaining-time byte layout): [solem-blip-ble `docs/ble_protocol.md`](https://github.com/beelzetron/solem-blip-ble/blob/main/docs/ble_protocol.md)
 
 ## Configuration
 
